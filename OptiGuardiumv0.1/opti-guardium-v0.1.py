@@ -3,7 +3,8 @@ import tkinter.messagebox
 import tkinter.filedialog
 from tkinter import ttk
 import tkinter.scrolledtext
-import customtkinter
+import ttkbootstrap
+from ttkbootstrap.constants import *
 import threading
 import psutil
 import os
@@ -18,21 +19,13 @@ from utils.onboard_malware_scanner import MalwareScanner
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 
-class OptiGuardiumApp(tk.Tk):
+class OptiGuardiumApp(ttkbootstrap.Window):
     def __init__(self):
         super().__init__()
 
         self.title("OptiGuardium")
 
         self.geometry(f"{SCREEN_WIDTH}x{SCREEN_HEIGHT}")
-
-        self.style = ttk.Style(self)
-        self.tk.call("source", "themes/forest-ttk-theme/forest-light.tcl")
-        self.tk.call("source", "themes/forest-ttk-theme/forest-dark.tcl")
-        self.style.theme_use("forest-dark")
-
-        # Default style for all frames
-        # self.style.configure("TFrame", background="black")
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=0)
@@ -60,13 +53,17 @@ class OptiGuardiumApp(tk.Tk):
         self.appearance_mode_label = ttk.Label(self.sidebar_frame, text="Appearance Mode:", font=("Arial", 12))
         self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(20, 0))
 
-        self.appearance_mode_option_menu = ttk.OptionMenu(self.sidebar_frame, tk.StringVar(), "Light", "Dark", "System")
+        self.appearance_mode_var = tk.StringVar(value="Dark")
+
+        self.appearance_mode_option_menu = ttk.OptionMenu(self.sidebar_frame, self.appearance_mode_var, "Dark", "Light", "Dark", command=self.change_appearance_mode_event)
         self.appearance_mode_option_menu.grid(row=6, column=0, padx=20, pady=5)
 
         self.scaling_label = ttk.Label(self.sidebar_frame, text="UI Scaling:", anchor="w")
         self.scaling_label.grid(row=7, column=0, padx=20, pady=(10, 0))
 
-        self.scaling_option_menu = ttk.OptionMenu(self.sidebar_frame, tk.StringVar(), "125%", "100%", "75%", "50%", self.change_scaling_event)
+        self.scaling_var = tk.StringVar(value="100%")
+
+        self.scaling_option_menu = ttk.OptionMenu(self.sidebar_frame, self.scaling_var, "100", "75%", "100%", "125%", self.change_scaling_event)
         self.scaling_option_menu.grid(row=8, column=0, padx=20, pady=(10, 20))
 
         # Main Entry and Search Button
@@ -103,15 +100,11 @@ class OptiGuardiumApp(tk.Tk):
         self.hardware_usage_frame.grid(row=0, column=3, padx=(20, 20), pady=(20, 0), sticky="nsew")
 
         # System Hardware Usage Components
-        self.cpu_usage_label = ttk.Label(self.hardware_usage_frame, text="CPU Usage: 0%", font=("Arial", 12))
-        self.cpu_usage_label.grid(row=0, column=0, pady=5)
-        self.cpu_usage_progressbar = customtkinter.CTkProgressBar(self.hardware_usage_frame, orientation="horizontal")
-        self.cpu_usage_progressbar.grid(row=1, column=0, padx=5, pady=5)
+        self.cpu_usage_meter = ttkbootstrap.Meter(self.hardware_usage_frame, metersize=120, padding=10, amountused=0, metertype="full", subtext="CPU Usage", interactive=False)
+        self.cpu_usage_meter.grid(row=1, column=0, padx=5, pady=5)
 
-        self.memory_usage_label = ttk.Label(self.hardware_usage_frame, text="RAM Usage: 0%", font=("Arial", 12))
-        self.memory_usage_label.grid(row=2, column=0, pady=5)
-        self.memory_usage_progressbar = customtkinter.CTkProgressBar(self.hardware_usage_frame, orientation="horizontal")
-        self.memory_usage_progressbar.grid(row=3, column=0, padx=5, pady=5)
+        self.memory_usage_meter = ttkbootstrap.Meter(self.hardware_usage_frame, metersize=120, padding=10, amountused=0, metertype="full", subtext="RAM Usage",  textright="%")
+        self.memory_usage_meter.grid(row=3, column=0, padx=5, pady=5)
 
         self.update_system_usage()
 
@@ -141,15 +134,15 @@ class OptiGuardiumApp(tk.Tk):
         self.feature_frame.grid(row=1, column=3, padx=(20, 20), pady=(20, 0), sticky="nsew")
         
         # ---------- Keyboard Blocker ----------
-        self.keyboard_blocker = KeyboardBlocker(self)
-        self.keyboard_blocker_switch = customtkinter.CTkSwitch(
-            self.feature_frame, 
-            text="Block Keyboard", 
-            command=self.keyboard_blocker.toggle_keyboard_input, 
-            variable=self.keyboard_blocker.get_block_var(),
-            onvalue=True,
-            offvalue=False)
-        self.keyboard_blocker_switch.grid(row=0, column=0, padx=5, pady=5)
+        # self.keyboard_blocker = KeyboardBlocker(self)
+        # self.keyboard_blocker_switch = customtkinter.CTkSwitch(
+        #     self.feature_frame, 
+        #     text="Block Keyboard", 
+        #     command=self.keyboard_blocker.toggle_keyboard_input, 
+        #     variable=self.keyboard_blocker.get_block_var(),
+        #     onvalue=True,
+        #     offvalue=False)
+        # self.keyboard_blocker_switch.grid(row=0, column=0, padx=5, pady=5)
 
     # ---------- Malware Scanner ----------
     def setup_malware_scanner_tab(self):
@@ -175,7 +168,7 @@ class OptiGuardiumApp(tk.Tk):
         self.scan_button.pack(pady=5)
 
         # MalwareScanner Instance
-        malware_hash_file = "malware_sha256_hashes.txt"
+        malware_hash_file = "data/malware_sha256_hashes.txt"
         self.scanner = MalwareScanner(malware_hash_file, self.callback_output_malware)
 
     def callback_output_malware(self, message):
@@ -272,12 +265,12 @@ class OptiGuardiumApp(tk.Tk):
         cpu_usage = psutil.cpu_percent(interval=1)
         memory_usage = psutil.virtual_memory().percent
 
-        self.cpu_usage_progressbar.set(cpu_usage / 100)
-        self.memory_usage_progressbar.set(memory_usage / 100)
+        self.cpu_usage_meter.configure(amountused=cpu_usage)
+        self.memory_usage_meter.configure(amountused=memory_usage)
 
         # Update the labels with the new information
-        self.cpu_usage_label.config(text=f"CPU Usage: {cpu_usage}%")
-        self.memory_usage_label.config(text=f"RAM Usage: {memory_usage}%")
+        self.cpu_usage_meter.configure(subtext=f"CPU Usage: {cpu_usage}%")
+        self.memory_usage_meter.configure(subtext=f"RAM Usage: {memory_usage}%")
 
         # Schedule the next update after 1 second
         self.after(1000, self.update_system_usage)
@@ -295,11 +288,19 @@ class OptiGuardiumApp(tk.Tk):
                 text_var.set(f'{device_path}: {disk_usage.percent:.2f}%')
 
             self.after(1000, self.update_disk_info)
-        
+
+    def update_network_info(self):
+        pass
+
+    def change_appearance_mode_event(self, new_value):
+        if new_value == "Dark":
+            self.style.theme_use("darkly")
+        elif new_value == "Light":
+            self.style.theme_use("litera")
 
     def change_scaling_event(self, new_scaling: str):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
-        ttk.set_widget_scaling(new_scaling_float)
+        self.tk.call("tk", "scaling", new_scaling_float)
 
     
     # def disable_keyboard_input(self):
