@@ -9,8 +9,6 @@ import threading
 import psutil
 import os
 import sys
-import sv_ttk
-import keyboard
 from utils.battery_stats_scraper import BatteryStats
 from utils.keyboard_input_blocker import KeyboardBlocker
 from utils.tempo_file_cleaner import TempFileCleaner
@@ -38,8 +36,8 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         self.logo_label = ttk.Label(self.sidebar_frame, text="OptiGuardium", font=("Arial", 16, "bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
-        # self.sidebar_button_1 = ttk.Button(self.sidebar_frame, text="Dashboard")
-        # self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=5)
+        self.sidebar_system_info_button = ttkbootstrap.Button(self.sidebar_frame, text="System Info", command=self.show_system_info)
+        self.sidebar_system_info_button.grid(row=1, column=0, padx=20, pady=5)
 
         # self.sidebar_button_2 = ttk.Button(self.sidebar_frame, text="Settings")
         # self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=5)
@@ -53,9 +51,9 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         self.appearance_mode_label = ttk.Label(self.sidebar_frame, text="Appearance Mode:", font=("Arial", 12))
         self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(20, 0))
 
-        self.appearance_mode_var = tk.StringVar(value="Dark")
+        self.appearance_mode_var = tk.StringVar(value="Light")
 
-        self.appearance_mode_option_menu = ttk.OptionMenu(self.sidebar_frame, self.appearance_mode_var, "Dark", "Light", "Dark", command=self.change_appearance_mode_event)
+        self.appearance_mode_option_menu = ttk.OptionMenu(self.sidebar_frame, self.appearance_mode_var, "Light", "Dark", "Light", command=self.change_appearance_mode_event)
         self.appearance_mode_option_menu.grid(row=6, column=0, padx=20, pady=5)
 
         self.scaling_label = ttk.Label(self.sidebar_frame, text="UI Scaling:", anchor="w")
@@ -100,31 +98,39 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         self.hardware_usage_frame.grid(row=0, column=3, padx=(20, 20), pady=(20, 0), sticky="nsew")
 
         # System Hardware Usage Components
-        self.cpu_usage_meter = ttkbootstrap.Meter(self.hardware_usage_frame, metersize=120, padding=10, amountused=0, metertype="full", subtext="CPU Usage", interactive=False)
+        self.cpu_usage_meter = ttkbootstrap.Meter(self.hardware_usage_frame, metersize=120, padding=10, amountused=0, metertype="full", subtext="CPU:", interactive=False)
         self.cpu_usage_meter.grid(row=1, column=0, padx=5, pady=5)
 
-        self.memory_usage_meter = ttkbootstrap.Meter(self.hardware_usage_frame, metersize=120, padding=10, amountused=0, metertype="full", subtext="RAM Usage",  textright="%")
+        self.memory_usage_meter = ttkbootstrap.Meter(self.hardware_usage_frame, metersize=120, padding=10, amountused=0, metertype="full", subtext="RAM:",  interactive=False)
         self.memory_usage_meter.grid(row=3, column=0, padx=5, pady=5)
 
         self.update_system_usage()
+
 
         # ---------- Disk Storage Usage ----------
         
         # Disk Labels
         # Disk Labels
+        self.disk_progressbars = []
         self.disk_labels = []
-        self.disk_textvars = []
+        self.disk_devices = []
 
         for i, disk in enumerate(psutil.disk_partitions()):
-            text_var = tkinter.StringVar()
-            text_var.set(f'{disk.device}: {0.0}%')
-            disk_label = ttk.Label(self.hardware_usage_frame, textvariable=text_var)
-            disk_label.grid(row=i + 5, column=0, padx=10, pady=5, sticky='w')
-            self.disk_labels.append(disk_label)
-            self.disk_textvars.append(text_var)
+            # Disks to be watched
+            device_path = disk.device
+            self.disk_devices.append(device_path)
 
-        # Checking the consistency
-        assert len(self.disk_labels) == len(self.disk_textvars)
+            # Disk Usage Labels
+            disk_label = ttkbootstrap.Label(self.hardware_usage_frame, text=f"{device_path}: 0.0%")
+            disk_label.grid(row=i + 4, column=1, padx=10, pady=5, sticky="w")
+
+            # Dİsk Progressbars
+            disk_usage_progressbar = ttkbootstrap.Progressbar(self.hardware_usage_frame, orient="horizontal", length=150, mode="determinate")
+            disk_usage_progressbar.grid(row=i + 4, column=0, padx=10, pady=5, sticky='w')
+            
+            # Append widgets to lists
+            self.disk_progressbars.append(disk_usage_progressbar)
+            self.disk_labels.append(disk_label)
         
         self.update_disk_info()
 
@@ -134,15 +140,24 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         self.feature_frame.grid(row=1, column=3, padx=(20, 20), pady=(20, 0), sticky="nsew")
         
         # ---------- Keyboard Blocker ----------
-        # self.keyboard_blocker = KeyboardBlocker(self)
-        # self.keyboard_blocker_switch = customtkinter.CTkSwitch(
-        #     self.feature_frame, 
-        #     text="Block Keyboard", 
-        #     command=self.keyboard_blocker.toggle_keyboard_input, 
-        #     variable=self.keyboard_blocker.get_block_var(),
-        #     onvalue=True,
-        #     offvalue=False)
-        # self.keyboard_blocker_switch.grid(row=0, column=0, padx=5, pady=5)
+        self.keyboard_blocker = KeyboardBlocker(self)
+        self.keyboard_blocker_switch = ttkbootstrap.Checkbutton(
+            self.feature_frame,
+            bootstyle="round-toggle",
+            text="Block Keyboard",
+            command=self.keyboard_blocker.toggle_keyboard_input,
+            variable=self.keyboard_blocker.get_block_var(),
+            onvalue=True,
+            offvalue=False)
+        self.keyboard_blocker_switch.grid(row=0, column=0, padx=5, pady=5)
+
+
+    # ---------- System Information Window ----------
+    def show_system_info(self):
+        """Function to display system information in a new window"""
+        # self.system_info_window = SystemInfoWindow(self)
+        pass
+
 
     # ---------- Malware Scanner ----------
     def setup_malware_scanner_tab(self):
@@ -189,6 +204,7 @@ class OptiGuardiumApp(ttkbootstrap.Window):
             return
         
         self.scanner.scan_directory(self.scan_directory, self.malware_progress_bar)
+
 
     # ---------- Temporary File Cleaner ----------
     def setup_temp_file_cleaner_tab(self):
@@ -237,6 +253,7 @@ class OptiGuardiumApp(ttkbootstrap.Window):
 
         self.cleaner_log_text.update()
 
+
     # ---------- Battery Stats Report ----------
     def setup_battery_tab(self):
         # Lisitng battery stats using Treeview
@@ -269,8 +286,8 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         self.memory_usage_meter.configure(amountused=memory_usage)
 
         # Update the labels with the new information
-        self.cpu_usage_meter.configure(subtext=f"CPU Usage: {cpu_usage}%")
-        self.memory_usage_meter.configure(subtext=f"RAM Usage: {memory_usage}%")
+        self.cpu_usage_meter.configure(subtext=f"CPU (%):")
+        self.memory_usage_meter.configure(subtext=f"RAM (%):")
 
         # Schedule the next update after 1 second
         self.after(1000, self.update_system_usage)
@@ -278,14 +295,22 @@ class OptiGuardiumApp(ttkbootstrap.Window):
     
     def update_disk_info(self):
         # Updating the information of each disk every second
-            for i, (label, text_var) in enumerate(zip(self.disk_labels, self.disk_textvars)):
-                device_path = text_var.get().split(':')[0]
+            for i, (disk_label, disk_progressbar, device_path) in enumerate(zip(self.disk_labels, self.disk_progressbars, self.disk_devices)):
+                # Getting disk usage value
                 if not device_path.endswith(':\\'):
                     device_path += ':\\'
                 
-                disk_usage = psutil.disk_usage(device_path)
-                
-                text_var.set(f'{device_path}: {disk_usage.percent:.2f}%')
+                try:
+                    disk_usage = psutil.disk_usage(device_path)
+                    usage_percent = disk_usage.percent
+                except PermissionError:
+                    usage_perccent = 0
+
+                # Update label
+                disk_label.configure(text=f"{device_path}: {usage_percent:.2f}%")
+
+                # Update progress bar
+                disk_progressbar.configure(value=usage_percent)
 
             self.after(1000, self.update_disk_info)
 
@@ -293,10 +318,10 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         pass
 
     def change_appearance_mode_event(self, new_value):
-        if new_value == "Dark":
-            self.style.theme_use("darkly")
-        elif new_value == "Light":
+        if new_value == "Light":
             self.style.theme_use("litera")
+        elif new_value == "Dark":
+            self.style.theme_use("darkly")
 
     def change_scaling_event(self, new_scaling: str):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
