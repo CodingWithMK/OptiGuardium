@@ -9,6 +9,8 @@ import threading
 import psutil
 import os
 import sys
+import time
+from functools import cache
 from utils.battery_stats_scraper import BatteryStats
 from utils.keyboard_input_blocker import KeyboardBlocker
 from utils.tempo_file_cleaner import TempFileCleaner
@@ -39,14 +41,14 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         self.sidebar_system_info_button = ttkbootstrap.Button(self.sidebar_frame, text="System Info", command=self.show_system_info)
         self.sidebar_system_info_button.grid(row=1, column=0, padx=20, pady=5)
 
-        # self.sidebar_button_2 = ttk.Button(self.sidebar_frame, text="Settings")
-        # self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=5)
+        self.sidebar_button_2 = ttk.Button(self.sidebar_frame, text="Settings")
+        self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=5)
 
-        # self.sidebar_button_3 = ttk.Button(self.sidebar_frame, text="About")
-        # self.sidebar_button_3.grid(row=3, column=0, padx=20, pady=5)
+        self.sidebar_button_3 = ttk.Button(self.sidebar_frame, text="About")
+        self.sidebar_button_3.grid(row=3, column=0, padx=20, pady=5)
 
-        # self.sidebar_button_4 = ttk.Button(self.sidebar_frame, text="Exit")
-        # self.sidebar_button_4.grid(row=4, column=0, padx=20, pady=5)
+        self.sidebar_button_4 = ttk.Button(self.sidebar_frame, text="Exit")
+        self.sidebar_button_4.grid(row=4, column=0, padx=20, pady=5)
 
         self.appearance_mode_label = ttk.Label(self.sidebar_frame, text="Appearance Mode:", font=("Arial", 12))
         self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(20, 0))
@@ -55,14 +57,6 @@ class OptiGuardiumApp(ttkbootstrap.Window):
 
         self.appearance_mode_option_menu = ttk.OptionMenu(self.sidebar_frame, self.appearance_mode_var, "Light", "Dark", "Light", command=self.change_appearance_mode_event)
         self.appearance_mode_option_menu.grid(row=6, column=0, padx=20, pady=5)
-
-        self.scaling_label = ttk.Label(self.sidebar_frame, text="UI Scaling:", anchor="w")
-        self.scaling_label.grid(row=7, column=0, padx=20, pady=(10, 0))
-
-        self.scaling_var = tk.StringVar(value="100%")
-
-        self.scaling_option_menu = ttk.OptionMenu(self.sidebar_frame, self.scaling_var, "100", "75%", "100%", "125%", self.change_scaling_event)
-        self.scaling_option_menu.grid(row=8, column=0, padx=20, pady=(10, 20))
 
         # Main Entry and Search Button
         self.main_entry = ttk.Entry(self, width=140)
@@ -74,11 +68,13 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         self.tab_2 = ttk.Frame(self.tab_control)
         self.tab_3 = ttk.Frame(self.tab_control)
         self.tab_4 = ttk.Frame(self.tab_control)
+        self.tab_5 = ttk.Frame(self.tab_control)
 
         self.tab_control.add(self.tab_1, text="OptiGuardian")
         self.tab_control.add(self.tab_2, text="OptiPerformance")
         self.tab_control.add(self.tab_3, text="OptiTempo")
         self.tab_control.add(self.tab_4, text="OptiBattery")
+        self.tab_control.add(self.tab_5, text="OptiDir")
         self.tab_control.grid(row=0, column=2, padx=(20, 0), pady=(20, 0), sticky="nsew")
 
         # OptiGuardian tab information
@@ -93,7 +89,12 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         # OptiTempo tab information
         self.setup_temp_file_cleaner_tab()
 
+        # OptiDir tab information
+        # self.setup_directory_manager_tab()
+
         # ---------- Hardware Usage Frame ----------
+        psutil.cpu_percent(interval=None)
+
         self.hardware_usage_frame = ttk.Frame(self)
         self.hardware_usage_frame.grid(row=0, column=3, padx=(20, 20), pady=(20, 0), sticky="nsew")
 
@@ -278,16 +279,18 @@ class OptiGuardiumApp(ttkbootstrap.Window):
             self.battery_treeview.insert("", "end", values=("Error", str(e)))
 
     def update_system_usage(self):
-        # Get system usage information
-        cpu_usage = psutil.cpu_percent(interval=1)
+        cpu_usage = psutil.cpu_percent(interval=None)
         memory_usage = psutil.virtual_memory().percent
 
         self.cpu_usage_meter.configure(amountused=cpu_usage)
         self.memory_usage_meter.configure(amountused=memory_usage)
-
+        
         # Update the labels with the new information
         self.cpu_usage_meter.configure(subtext=f"CPU (%):")
         self.memory_usage_meter.configure(subtext=f"RAM (%):")
+        # Get system usage information
+        cpu_usage = psutil.cpu_percent(interval=0)
+        memory_usage = psutil.virtual_memory().percent
 
         # Schedule the next update after 1 second
         self.after(1000, self.update_system_usage)
@@ -322,18 +325,6 @@ class OptiGuardiumApp(ttkbootstrap.Window):
             self.style.theme_use("litera")
         elif new_value == "Dark":
             self.style.theme_use("darkly")
-
-    def change_scaling_event(self, new_scaling: str):
-        new_scaling_float = int(new_scaling.replace("%", "")) / 100
-        self.tk.call("tk", "scaling", new_scaling_float)
-
-    
-    # def disable_keyboard_input(self):
-    #     for i in range(150):
-    #         if self.keyboard_block_var.get():
-    #             keyboard.block_key(i)
-    #         else:
-    #             keyboard.unhook(i)
         
         
 
