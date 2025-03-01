@@ -122,12 +122,12 @@ class OptiGuardiumApp(ttkbootstrap.Window):
             self.disk_devices.append(device_path)
 
             # Disk Usage Labels
-            disk_label = ttkbootstrap.Label(self.hardware_usage_frame, text=f"{device_path}: 0.0%")
-            disk_label.grid(row=i + 4, column=1, padx=10, pady=5, sticky="w")
+            disk_label = ttkbootstrap.Label(self, text=f"{device_path}: 0.0%")
+            disk_label.grid(row=i + 1, column=2, padx=10, pady=5, sticky="w")
 
             # Dİsk Progressbars
-            disk_usage_progressbar = ttkbootstrap.Progressbar(self.hardware_usage_frame, orient="horizontal", length=150, mode="determinate")
-            disk_usage_progressbar.grid(row=i + 4, column=0, padx=10, pady=5, sticky='w')
+            disk_usage_progressbar = ttkbootstrap.Progressbar(self, orient="horizontal", length=150, mode="determinate")
+            disk_usage_progressbar.grid(row=i + 1, column=1, padx=10, pady=5, sticky='w')
             
             # Append widgets to lists
             self.disk_progressbars.append(disk_usage_progressbar)
