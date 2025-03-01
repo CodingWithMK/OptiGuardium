@@ -3,8 +3,8 @@ import tkinter as tk
 import ttkbootstrap
 import os
 import sys
-from gpiozero import CPUTemperature
 import clr
+import wmi
 
 class SystemInformationMonitor(ttkbootstrap.Window):
     def __init__(self):
@@ -38,8 +38,14 @@ class SystemInformationMonitor(ttkbootstrap.Window):
 
         self.update_system_usage()
 
-    def init_openhardwaremonitor(self):
-        file = ""
+    def init_cpu_temp(self):
+        open_hardware_monitor = wmi.WMI(namespace="root\OpenHardwareMonitor")
+        temperature_infos = open_hardware_monitor.Sensor()
+
+        for sensor in temperature_infos:
+            if sensor.SensorType == u"Temperature":
+                print(sensor.Name)
+                print(sensor.Value)
 
     def update_system_usage(self):
         cpu_usage = psutil.cpu_percent()
