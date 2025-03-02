@@ -145,8 +145,21 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         self.disk_devices = []
 
         for i, disk in enumerate(psutil.disk_partitions()):
+            # On Windows, disk.device might be something like "C:"
+            # On Mac/Linux, disk.device might look like "/dev/disk1s5" but the real usage path is in disk.mountpoint
+            if sys.platform == "win32":
+                device_path = disk.device
+            else:
+                if disk.fstype in ("devfs", "procfs", "tmpfs", "volfs", "autofs"):
+                    continue
+                elif not disk.mountpoint.startswith("/"):
+                    continue
+                    # Use the mountpoint on Mac/Linux
+                device_path = disk.mountpoint
+                
+                if sys.platform != "win32" and device_path != "/":
+                    continue
             # Disks to be watched
-            device_path = disk.device
             self.disk_devices.append(device_path)
 
             # Disk Usage Labels
