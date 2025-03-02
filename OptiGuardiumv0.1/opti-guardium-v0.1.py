@@ -55,7 +55,14 @@ class OptiGuardiumApp(ttkbootstrap.Window):
 
         self.appearance_mode_var = tk.StringVar(value="Light")
 
-        self.appearance_mode_option_menu = ttk.OptionMenu(self.sidebar_frame, self.appearance_mode_var, "Light", "Dark", "Light", command=self.change_appearance_mode_event)
+        self.appearance_mode_option_menu = ttk.OptionMenu(
+            self.sidebar_frame,
+            self.appearance_mode_var,
+            "Light",
+            "Dark",
+            "Light",
+            command=self.change_appearance_mode_event
+        )
         self.appearance_mode_option_menu.grid(row=6, column=0, padx=20, pady=5)
 
         # Main Entry and Search Button
@@ -73,9 +80,14 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         self.tab_control.add(self.tab_1, text="OptiGuardian")
         self.tab_control.add(self.tab_2, text="OptiPerformance")
         self.tab_control.add(self.tab_3, text="OptiTempo")
-        self.tab_control.add(self.tab_4, text="OptiBattery")
+
+        # Checking OS before adding battery tab
+        if sys.platform == "win32":
+            self.tab_control.add(self.tab_4, text="OptiBattery")
+
         self.tab_control.add(self.tab_5, text="OptiDir")
         self.tab_control.grid(row=0, column=2, padx=(20, 0), pady=(20, 0), sticky="nsew")
+
 
         # OptiGuardian tab information
         self.setup_malware_scanner_tab()
@@ -84,7 +96,8 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         # self.setup_performance_booster_tab()
 
         # OptiBattery tab information
-        self.setup_battery_tab()
+        if sys.platform == "win32":
+            self.setup_battery_tab()
 
         # OptiTempo tab information
         self.setup_temp_file_cleaner_tab()
@@ -99,10 +112,26 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         self.hardware_usage_frame.grid(row=0, column=3, padx=(20, 20), pady=(20, 0), sticky="nsew")
 
         # System Hardware Usage Components
-        self.cpu_usage_meter = ttkbootstrap.Meter(self.hardware_usage_frame, metersize=120, padding=10, amountused=0, metertype="full", subtext="CPU:", interactive=False)
+        self.cpu_usage_meter = ttkbootstrap.Meter(
+            self.hardware_usage_frame,
+            metersize=120,
+            padding=10,
+            amountused=0,
+            metertype="full",
+            subtext="CPU:",
+            interactive=False
+        )
         self.cpu_usage_meter.grid(row=1, column=0, padx=5, pady=5)
 
-        self.memory_usage_meter = ttkbootstrap.Meter(self.hardware_usage_frame, metersize=120, padding=10, amountused=0, metertype="full", subtext="RAM:",  interactive=False)
+        self.memory_usage_meter = ttkbootstrap.Meter(
+            self.hardware_usage_frame,
+            metersize=120,
+            padding=10,
+            amountused=0,
+            metertype="full",
+            subtext="RAM:",
+            interactive=False
+        )
         self.memory_usage_meter.grid(row=3, column=0, padx=5, pady=5)
 
         self.update_system_usage()
@@ -110,7 +139,6 @@ class OptiGuardiumApp(ttkbootstrap.Window):
 
         # ---------- Disk Storage Usage ----------
         
-        # Disk Labels
         # Disk Labels
         self.disk_progressbars = []
         self.disk_labels = []
@@ -149,16 +177,21 @@ class OptiGuardiumApp(ttkbootstrap.Window):
             command=self.keyboard_blocker.toggle_keyboard_input,
             variable=self.keyboard_blocker.get_block_var(),
             onvalue=True,
-            offvalue=False)
+            offvalue=False
+        )
         self.keyboard_blocker_switch.grid(row=0, column=0, padx=5, pady=5)
 
 
     # ---------- System Information Window ----------
     def show_system_info(self):
         """Function to display system information in a new window"""
+        # TODO: implement this method
         # self.system_info_window = SystemInfoWindow(self)
         pass
 
+
+# --------------------------------------------
+# Malware Scanner
 
     # ---------- Malware Scanner ----------
     def setup_malware_scanner_tab(self):
@@ -206,6 +239,8 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         
         self.scanner.scan_directory(self.scan_directory, self.malware_progress_bar)
 
+# --------------------------------------------
+# Temporary File Cleaner
 
     # ---------- Temporary File Cleaner ----------
     def setup_temp_file_cleaner_tab(self):
@@ -254,10 +289,12 @@ class OptiGuardiumApp(ttkbootstrap.Window):
 
         self.cleaner_log_text.update()
 
+# --------------------------------------------
+# Battery Stats (Windows only)
 
     # ---------- Battery Stats Report ----------
     def setup_battery_tab(self):
-        # Lisitng battery stats using Treeview
+        """Listing the battery stats using Treeview (Windows)"""
         columns = ("Property", "Value")
         self.battery_treeview = ttk.Treeview(self.tab_4, columns=columns, show="headings")
         self.battery_treeview.heading("Property", text="Property")
@@ -268,17 +305,25 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         self.load_battery_stats()
 
     def load_battery_stats(self):
+        """Load battery stats on Windows using powercfg or your custom approach."""
         try:
-            battery_stats = BatteryStats().parse_html_content()
-            if battery_stats:
-                for key, value in battery_stats.items():
-                    self.battery_treeview.insert("", "end", values=(key, value))
+            if sys.platform == "win32":
+                battery_stats = BatteryStats().parse_html_content()
+                if battery_stats:
+                    for key, value in battery_stats.items():
+                        self.battery_treeview.insert("", "end", values=(key, value))
+                else:
+                    self.battery_treeview.insert("", "end", values=("Error", "N/A"))
             else:
-                self.battery_treeview.insert("", "end", values=("Error", "N/A"))
+                self.battery_treeview.insert("", "end", values=("Unavailable", "This feature is only for Windows right now."))
         except Exception as e:
             self.battery_treeview.insert("", "end", values=("Error", str(e)))
 
+# --------------------------------------------
+# System Usage
+
     def update_system_usage(self):
+        """Update CPU and RAM usage in Meter widgets."""
         cpu_usage = psutil.cpu_percent(interval=None)
         memory_usage = psutil.virtual_memory().percent
 
@@ -288,48 +333,59 @@ class OptiGuardiumApp(ttkbootstrap.Window):
         # Update the labels with the new information
         self.cpu_usage_meter.configure(subtext=f"CPU (%):")
         self.memory_usage_meter.configure(subtext=f"RAM (%):")
-        # Get system usage information
-        cpu_usage = psutil.cpu_percent(interval=0)
-        memory_usage = psutil.virtual_memory().percent
 
         # Schedule the next update after 1 second
         self.after(1000, self.update_system_usage)
 
-    
+# --------------------------------------------
+# Disk Usage
+
     def update_disk_info(self):
-        # Updating the information of each disk every second
-            for i, (disk_label, disk_progressbar, device_path) in enumerate(zip(self.disk_labels, self.disk_progressbars, self.disk_devices)):
-                # Getting disk usage value
-                if not device_path.endswith(':\\'):
-                    device_path += ':\\'
+        """Updating disk usage information every second, both for Windows and MacOS/Linux"""
+        for i, (disk_label, disk_progressbar, device_path) in enumerate(
+            zip(self.disk_labels, self.disk_progressbars, self.disk_devices)
+        ):
+            try:
+                disk_usage = psutil.disk_usage(device_path)
+                usage_percent = disk_usage.percent
+            except PermissionError:
+                usage_perccent = 0
+            except FileNotFoundError:
+                # If the device_path no longer exists or is not valid on Mac
+                usage_percent = 0
+            
+            disk_label.configure(text=f"{device_path}: {usage_percent:.2f}%")
+            disk_progressbar.configure(value=usage_percent)
+            
+            # # Getting disk usage value
+            # if not device_path.endswith(':\\'):
+            #     device_path += ':\\'
                 
-                try:
-                    disk_usage = psutil.disk_usage(device_path)
-                    usage_percent = disk_usage.percent
-                except PermissionError:
-                    usage_perccent = 0
+            # try:
+            #     disk_usage = psutil.disk_usage(device_path)
+            #     usage_percent = disk_usage.percent
+            # except PermissionError:
+            #     usage_perccent = 0
 
-                # Update label
-                disk_label.configure(text=f"{device_path}: {usage_percent:.2f}%")
+            # # Update label
+            # disk_label.configure(text=f"{device_path}: {usage_percent:.2f}%")
 
-                # Update progress bar
-                disk_progressbar.configure(value=usage_percent)
+            # # Update progress bar
+            # disk_progressbar.configure(value=usage_percent)
 
-            self.after(1000, self.update_disk_info)
+        self.after(1000, self.update_disk_info)
 
     def update_network_info(self):
         pass
 
+# --------------------------------------------
     def change_appearance_mode_event(self, new_value):
         if new_value == "Light":
             self.style.theme_use("litera")
         elif new_value == "Dark":
             self.style.theme_use("darkly")
         
-        
-
-
-
+# --------------------------------------------
 if __name__ == "__main__":
     app = OptiGuardiumApp()
     app.mainloop()
