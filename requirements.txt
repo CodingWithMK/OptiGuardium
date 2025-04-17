@@ -1,0 +1,14 @@
+ttkbootstrap
+opencv-python
+winshell
+Pillow==9.5.0
+matplotlib
+keyboard
+psutil
+fitz
+customtkinter
+pycaw
+comtypes
+screen_brightness_control
+clr
+wmi
